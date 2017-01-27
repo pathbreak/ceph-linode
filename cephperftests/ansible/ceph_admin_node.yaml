@@ -1,0 +1,61 @@
+# Ansible playbook to configure a machine as a Ceph admin node
+#
+# Expected input variables
+#   local_pubkey_file : Local file path where target's public key file should be downloaded and stored.
+#
+---
+- hosts: all
+  tasks:
+
+    - name: Copy secure SSH config
+      copy:
+        src: sshd_config.j2
+        dest: /etc/ssh/sshd_config
+        owner: root
+        group: root
+        mode: "u=rw,g=r,o=r"
+        
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
+  
+    - name: Generate SSH key
+      shell: ssh-keygen -b 4096 -t rsa -f /root/.ssh/id_rsa -q -N ""
+      args:
+        creates: /root/.ssh/id_rsa
+        
+    - name: Fetch SSH public key
+      fetch: 
+        src: /root/.ssh/id_rsa.pub
+        dest: "{{ local_pubkey_file }}"
+        flat: yes
+        
+
+    - name: Add Ceph repo key
+      apt_key:
+        url: "https://download.ceph.com/keys/release.asc"
+        state: present  
+        
+        
+        
+    - name: Add Ceph package repo
+      apt_repository:
+        repo: deb https://download.ceph.com/debian-jewel/ {{ansible_distribution_release}} main
+        state: present
+        filename: ceph
+        
+        
+        
+    - name: Update apt cache
+      apt: update_cache=yes
+
+
+
+    - name: Install prerequisites and ceph-deploy
+      apt: name={{ item }} state=latest 
+      with_items:
+        - ntp
+        - tmux
+        - ceph-deploy
+

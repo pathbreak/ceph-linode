@@ -1,0 +1,19 @@
+# Module to change hostname in Ubuntu.
+# - Modifies /etc/hostname
+# - Updates "127.0.1.1 hostname" entry in /etc/hosts
+# - Changes session hostname
+#
+# Expected variables:
+#   new_hostname : the new hostname
+---
+- hosts: all
+  tasks:
+
+    - name: Change /etc/hostname
+      lineinfile: dest=/etc/hostname regexp=.* line={{new_hostname}}
+
+    - name: Change session hostname
+      command: hostname {{new_hostname}}
+      
+    - name: Update /etc/hosts 127.0.1.1 [hostname]
+      lineinfile: dest=/etc/hosts regexp='^127\.0\.1\.1.+$' line="127.0.1.1\t{{new_hostname}}"

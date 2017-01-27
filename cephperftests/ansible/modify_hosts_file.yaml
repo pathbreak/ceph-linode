@@ -1,0 +1,22 @@
+# Playbook to insert a bunch of entries in /etc/hosts.
+# Required variables:
+#   "host_entries" - list of dicts with {ip:, fqdn:, shortname:}. If this is an empty list, the block is removed.
+#
+#   "cluster" - name of the cluster to which these entries belong. 
+#               Just used in /etc/hosts marker lines, not appended to the hostnames.
+---
+- hosts: all
+  tasks:
+    
+    - name: init
+      set_fact: hosts_block=""
+      
+    - name: concatenate all items into a string
+      set_fact: hosts_block="{{ hosts_block + item.ip + '\t' + item.shortname + '\t' + item.fqdn + '\n' }}"
+      with_items: "{{host_entries}}"
+      
+    - name: Add mappings to /etc/hosts
+      blockinfile:
+        dest: /etc/hosts
+        block: "{{hosts_block}}"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{cluster}}"

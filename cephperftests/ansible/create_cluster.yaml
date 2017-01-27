@@ -1,0 +1,27 @@
+# Module to create a new cluster using ceph-deploy
+# Expected variables:
+#   cluster_name - name of the cluster
+#   mon - initial monitor node dict with {'fqdn', 'pubkey'}
+
+- hosts: all
+  vars:
+    - cluster_dir: /root/cephclusters/{{cluster_name}}
+    - cluster_conf_file: "{{cluster_dir}}/{{cluster_name}}.conf"
+    
+  tasks:
+    - name: Create cluster directory
+      file: path="{{cluster_dir}}" state=directory
+      
+    - name: Add cephmon to known_hosts of admin node
+      shell: ssh-keyscan {{mon.fqdn}} >> /root/.ssh/known_hosts
+      
+    - command: ceph-deploy --cluster {{cluster_name}}  new {{mon.fqdn}}
+      args:
+        chdir: "{{cluster_dir}}"
+        
+    - name: Add default OSD pool size to conf file
+      ini_file:
+        dest: "{{cluster_conf_file}}"
+        section: global
+        option: osd pool default size
+        value: 2

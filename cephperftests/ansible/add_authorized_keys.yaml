@@ -1,0 +1,14 @@
+# Playbook to add entries to .ssh/authorized_keys file.
+#
+# Expected variables:
+#   keys : all the keys to be added, as a single string
+#   cluster : name of the cluster
+
+- hosts: all
+  tasks:
+    - name: Add entries to authorized_keys
+      blockinfile:
+        dest: /root/.ssh/authorized_keys
+        content: |
+          {{ keys }}
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{cluster}}"
